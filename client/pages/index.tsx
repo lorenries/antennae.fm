@@ -360,7 +360,7 @@ function Home() {
 }
 
 const subscriptionClient = new SubscriptionClient(
-  "ws://antennae.herokuapp.com/subscriptions",
+  "wss://antennae.herokuapp.com/subscriptions",
   {
     reconnect: true,
   },
