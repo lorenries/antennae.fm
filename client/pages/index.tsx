@@ -1,7 +1,20 @@
-import { useRef, useReducer, useEffect } from "react";
+import { useRef, useReducer, useEffect, useState, useMemo } from "react";
 import Head from "next/head";
 import { Flex, Box, SimpleGrid, Spinner } from "@chakra-ui/core";
 import { Global, css } from "@emotion/core";
+import {
+  useQuery,
+  useSubscription,
+  dedupExchange,
+  cacheExchange,
+  fetchExchange,
+  subscriptionExchange,
+  Client,
+  Provider,
+} from "urql";
+import { SubscriptionClient } from "subscriptions-transport-ws";
+import gql from "graphql-tag";
+import ws from "ws";
 
 import Butterfly from "assets/butterfly.svg";
 import PlayIcon from "assets/play.svg";
@@ -10,28 +23,16 @@ import PauseIcon from "assets/pause.svg";
 const accent = "#f77e5e";
 
 interface Station {
+  id: string;
   name: string;
   url: string;
 }
 
-const stations: Station[] = [
-  { name: "WNYU", url: "http://cinema.acs.its.nyu.edu:8000/wnyu128.mp3" },
-  {
-    name: "BBC6",
-    url: "http://bbcmedia.ic.llnwd.net/stream/bbcmedia_6music_mf_p",
-  },
-  { name: "Dublab", url: "https://dublab.out.airtime.pro/dublab_a" },
-  { name: "KCRW", url: "https://kcrw.streamguys1.com/kcrw_192k_mp3_e24" },
-  { name: "WEFUNK", url: "http://s-00.wefunkradio.com:81/wefunk64.mp3" },
-  { name: "Balamii", url: "https://balamii.out.airtime.pro:8000/balamii_a" },
-  { name: "n10.as", url: "http://n10as.out.airtime.pro:8000/n10as_a" },
-  {
-    name: "block.fm",
-    url:
-      "https://image.block.fm/uploads/audio/002c2686-2ee1-485b-b1af-475986696bab.mp3",
-  },
-  { name: "WXPN", url: "https://wxpnhi.xpn.org/xpnhi-nopreroll" },
-];
+interface Metadata {
+  id: string;
+  title: string;
+  artist: string;
+}
 
 type AppState = {
   isPlaying: boolean;
@@ -76,18 +77,35 @@ function appReducer(state: AppState, action: Action): AppState {
 
 type StationProps = Station & { dispatch: Dispatch; state: AppState };
 
-function Station({ name, url, dispatch, state }: StationProps) {
+function Station({ name, url, id, dispatch, state }: StationProps) {
+  const [{ data }] = useSubscription<{ metadata: Metadata }>({
+    query: gql`
+      subscription MetadataSubscription($id: ID!) {
+        metadata(id: $id) {
+          id
+          title
+          artist
+        }
+      }
+    `,
+    variables: {
+      id,
+    },
+  });
+
   const isActive = name === state.station?.name;
 
   const playStation = () => {
-    if (!isActive) dispatch({ type: "start", payload: { name, url } });
+    if (!isActive) dispatch({ type: "start", payload: { id, name, url } });
   };
 
   return (
     <Flex
       as="button"
       onClick={playStation}
-      flexBasis="50%"
+      flexDirection="column"
+      justifyContent="space-between"
+      padding="4"
       minH={[32, 40, 48]}
       bg="gray.900"
       border="1px solid"
@@ -96,8 +114,6 @@ function Station({ name, url, dispatch, state }: StationProps) {
       outline="none"
       color={isActive ? accent : "gray.300"}
       shadow="lg"
-      alignItems="center"
-      justifyContent="center"
       css={css`
         &:hover {
           background-color: #1a202c;
@@ -105,6 +121,20 @@ function Station({ name, url, dispatch, state }: StationProps) {
       `}
     >
       {name}
+      {data?.metadata && (
+        <Box
+          color={isActive ? accent : "gray.300"}
+          fontSize="xs"
+          textAlign="start"
+          as="span"
+          wordBreak="break-word"
+          overflow="hidden"
+        >
+          {data.metadata.title}
+          {data.metadata.title && data.metadata.artist && " – "}
+          {data.metadata.artist}
+        </Box>
+      )}
     </Flex>
   );
 }
@@ -115,9 +145,38 @@ function Player({
   isLoading,
   dispatch,
 }: AppState & { dispatch: Dispatch }) {
-  const playerRef = useRef<HTMLAudioElement>(null!);
+  const [{ data }] = useSubscription<{ metadata: Metadata }>({
+    query: gql`
+      subscription MetadataSubscription($id: ID!) {
+        metadata(id: $id) {
+          id
+          title
+          artist
+        }
+      }
+    `,
+    variables: {
+      id: station.id,
+    },
+  });
 
-  console.log(isLoading);
+  const [track, setTrack] = useState<Metadata | undefined>(data?.metadata);
+
+  useEffect(() => {
+    console.log("running");
+    if (station.id !== data?.metadata.id) {
+      setTrack(undefined);
+    } else {
+      setTrack(data?.metadata);
+    }
+  }, [
+    data?.metadata.title,
+    data?.metadata.artist,
+    data?.metadata.id,
+    station.id,
+  ]);
+
+  const playerRef = useRef<HTMLAudioElement>(null!);
 
   function togglePlay() {
     const player = playerRef.current;
@@ -196,7 +255,15 @@ function Player({
             )}
           </Box>
         )}
+        {track && (
+          <Box color="gray.300" fontSize={["sm", "md"]} paddingX="4">
+            {track.title}
+            {data.metadata.title && data.metadata.artist && " – "}
+            {track.artist}
+          </Box>
+        )}
         <Box color="gray.300">{station.name}</Box>
+        {/* eslint-disable-next-line */}
         <audio
           css={css`
             display: none;
@@ -209,11 +276,23 @@ function Player({
   );
 }
 
-export default function Home() {
+function Home() {
   const [state, dispatch] = useReducer(appReducer, {
     isPlaying: false,
     isLoading: false,
     station: undefined,
+  });
+
+  const [{ data }] = useQuery<{ stations: Station[] }>({
+    query: gql`
+      query stationsQuery {
+        stations {
+          id
+          name
+          url
+        }
+      }
+    `,
   });
 
   return (
@@ -261,14 +340,15 @@ export default function Home() {
 
       <Flex as="main" justify="center">
         <SimpleGrid columns={[2, 3]} spacing={6} w="100%" maxW="5xl" px={4}>
-          {stations.map((station) => (
-            <Station
-              key={station.name}
-              state={state}
-              dispatch={dispatch}
-              {...station}
-            />
-          ))}
+          {data?.stations &&
+            data.stations.map((station) => (
+              <Station
+                key={station.id}
+                state={state}
+                dispatch={dispatch}
+                {...station}
+              />
+            ))}
         </SimpleGrid>
       </Flex>
 
@@ -276,5 +356,35 @@ export default function Home() {
 
       <footer></footer>
     </div>
+  );
+}
+
+const subscriptionClient = new SubscriptionClient(
+  "ws://localhost:8000/subscriptions",
+  {
+    reconnect: true,
+  },
+  typeof window === "undefined" && ws
+);
+
+const client = new Client({
+  url: "http://localhost:8000/graphql",
+  exchanges: [
+    dedupExchange,
+    cacheExchange,
+    fetchExchange,
+    subscriptionExchange({
+      forwardSubscription(operation) {
+        return subscriptionClient.request(operation);
+      },
+    }),
+  ],
+});
+
+export default function Main() {
+  return (
+    <Provider value={client}>
+      <Home />
+    </Provider>
   );
 }
