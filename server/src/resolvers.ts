@@ -5,7 +5,8 @@ import { stats } from "./stream";
 
 const resolvers = {
   Station: {
-    url: ({ id }: { id: string }) => `http://localhost:8000/stream/${id}`,
+    url: ({ id }: { id: string }) =>
+      `${process.env.API_ROOT || "http://localhost"}/stream/${id}`,
   },
   StreamStatus: {},
   Query: {

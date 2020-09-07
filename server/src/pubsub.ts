@@ -1,21 +1,12 @@
 import { PubSub } from "apollo-server-express";
 import { RedisPubSub } from "graphql-redis-subscriptions";
-import Redis, { RedisOptions } from "ioredis";
+import Redis from "ioredis";
 
 export const METADATA_RECEIVED = "METADATA_RECEIVED";
 
-const options: RedisOptions = {
-  host: process.env.REDIS_HOST || "",
-  port: 6379,
-  retryStrategy: (times) => {
-    // reconnect after
-    return Math.min(times * 50, 2000);
-  },
-};
-
-export const pubsub = process.env.REDIS_HOST
+export const pubsub = process.env.REDIS_URL
   ? new RedisPubSub({
-      publisher: new Redis(options),
-      subscriber: new Redis(options),
+      publisher: new Redis(process.env.REDIS_URL),
+      subscriber: new Redis(process.env.REDIS_URL),
     })
   : new PubSub();
