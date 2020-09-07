@@ -4,10 +4,30 @@
   "main": "index.js",
   "author": "lorenries",
   "private": true,
+  "scripts": {
+    "start": "ts-node-dev src/index.ts",
+    "build": "tsc"
+  },
+  "engines": {
+    "node": "12.x"
+  },
   "devDependencies": {
     "@prisma/cli": "^2.4.1",
+    "@types/express": "^4.17.8",
+    "@types/ioredis": "^4.17.4",
     "@types/node": "^14.6.0",
     "ts-node": "^8.10.2",
+    "ts-node-dev": "^1.0.0-pre.62",
     "typescript": "^3.9.7"
+  },
+  "dependencies": {
+    "apollo-server-express": "^2.17.0",
+    "express": "^4.17.1",
+    "graphql-redis-subscriptions": "^2.3.1",
+    "icy": "^2.1.0",
+    "ioredis": "^4.17.3"
+  },
+  "volta": {
+    "node": "12.18.3"
   }
 }

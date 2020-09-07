@@ -1,17 +1,22 @@
 {
   "compilerOptions": {
     "target": "es2018",
+    "baseUrl": "./",
     "outDir": "dist",
     "strict": true,
     "noImplicitAny": true,
     "allowJs": true,
     "module": "commonjs",
     "moduleResolution": "node",
-    "typeRoots": ["node_modules/@types"],
-    "types": ["node", "jest"],
+    "typeRoots": ["./node_modules/@types", "src/types"],
+    "paths": {
+      "icy": ["src/types/icy/index.d.ts"]
+    },
+    "types": ["node"],
     "esModuleInterop": true,
     "lib": ["esnext"],
     "resolveJsonModule": true
   },
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }
