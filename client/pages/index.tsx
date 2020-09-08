@@ -338,7 +338,7 @@ function Home() {
 
       <Box h={8} />
 
-      <Flex as="main" justify="center">
+      <Flex as="main" justify="center" marginBottom={20}>
         <SimpleGrid columns={[2, 3]} spacing={6} w="100%" maxW="5xl" px={4}>
           {data?.stations &&
             data.stations.map((station) => (
