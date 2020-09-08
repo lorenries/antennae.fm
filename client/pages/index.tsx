@@ -19,6 +19,7 @@ import ws from "ws";
 import Butterfly from "assets/butterfly.svg";
 import PlayIcon from "assets/play.svg";
 import PauseIcon from "assets/pause.svg";
+import Spotify from "assets/spotify.svg";
 
 const accent = "#f77e5e";
 
@@ -182,31 +183,16 @@ function Player({
     const player = playerRef.current;
     if (player && !isPlaying) {
       player.play();
+      dispatch({ type: "playing", payload: station });
     }
 
     if (player && isPlaying) {
       player.pause();
+      dispatch({ type: "paused", payload: station });
     }
   }
 
-  useEffect(() => {
-    const player = playerRef.current;
-
-    const dispatchPlayEvent = () =>
-      dispatch({ type: "playing", payload: station });
-    const dispatchPausedEvent = () =>
-      dispatch({ type: "paused", payload: station });
-
-    player.addEventListener("playing", dispatchPlayEvent);
-    player.addEventListener("pause", dispatchPausedEvent);
-
-    togglePlay();
-
-    return () => {
-      player.removeEventListener("playing", dispatchPlayEvent);
-      player.removeEventListener("paused", dispatchPausedEvent);
-    };
-  }, [station.url]);
+  useEffect(togglePlay, [station.url]);
 
   return (
     <Flex
@@ -220,6 +206,7 @@ function Player({
       bg="gray.900"
       borderTop="1px solid"
       borderTopColor="gray.600"
+      paddingBottom={[5, 0]}
     >
       <Flex
         maxW="5xl"
@@ -258,11 +245,29 @@ function Player({
         {track && (
           <Box color="gray.300" fontSize={["sm", "md"]} paddingX="4">
             {track.title}
-            {data.metadata.title && data.metadata.artist && " – "}
+            {track.title && track.artist && " – "}
             {track.artist}
           </Box>
         )}
-        <Box color="gray.300">{station.name}</Box>
+        {track?.title && track?.artist ? (
+          <a
+            href={`spotify:search:${encodeURIComponent(
+              `${track.title} ${track.artist}`
+            )}`}
+            aria-label="Open in Spotify"
+          >
+            <Spotify
+              css={css`
+                height: 32px;
+                width: 32px;
+                fill: #1ed760;
+              `}
+            />
+          </a>
+        ) : (
+          <Box color="gray.300">{station.name}</Box>
+        )}
+
         {/* eslint-disable-next-line */}
         <audio
           css={css`
@@ -338,7 +343,11 @@ function Home() {
 
       <Box h={8} />
 
-      <Flex as="main" justify="center" marginBottom={20}>
+      <Flex
+        as="main"
+        justify="center"
+        marginBottom={state.station !== undefined && 20}
+      >
         <SimpleGrid columns={[2, 3]} spacing={6} w="100%" maxW="5xl" px={4}>
           {data?.stations &&
             data.stations.map((station) => (
