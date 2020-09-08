@@ -360,7 +360,7 @@ function Home() {
 }
 
 const subscriptionClient = new SubscriptionClient(
-  "wss://antennae.herokuapp.com/subscriptions",
+  `${process.env.WS_ROOT}/subscriptions`,
   {
     reconnect: true,
   },
@@ -368,7 +368,7 @@ const subscriptionClient = new SubscriptionClient(
 );
 
 const client = new Client({
-  url: "https://antennae.herokuapp.com/graphql",
+  url: `${process.env.API_ROOT}/graphql`,
   exchanges: [
     dedupExchange,
     cacheExchange,

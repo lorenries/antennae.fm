@@ -1,4 +1,8 @@
 module.exports = {
+  env: {
+    API_ROOT: process.env.API_ROOT || "https://api.antennae.fm",
+    WS_ROOT: process.env.WS_ROOT || "wss://api.antennae.fm",
+  },
   webpack(config, options) {
     /**
      * Optimize and load .svg files as react components with `svgr`
