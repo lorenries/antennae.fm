@@ -15,6 +15,7 @@ interface StreamStatus {
   [id: string]: {
     id: string;
     url: string;
+    lastTime?: number;
     status: 0 | 1;
   };
 }
@@ -51,6 +52,8 @@ function sendData(id: string, data: Buffer, res: IcyResponse) {
     return;
   }
 
+  dataMonitor(id, data);
+
   if (!musicBuffer.has(id)) {
     musicBuffer.set(id, new RingBuffer(131072));
   }
@@ -72,9 +75,9 @@ function listenToStream(id: string, url: string) {
 
       if (StreamTitle) {
         if (id === "kcrw") {
-          const parts = StreamTitle.split("-");
-          metadata.title = parts[0]?.trim();
-          metadata.artist = parts.slice(1).join("-")?.trim();
+          const [title, artist] = StreamTitle.split("-");
+          metadata.title = title?.trim();
+          metadata.artist = artist?.trim();
         } else {
           const [artist, title] = StreamTitle.split(" - ");
           metadata.title = title?.trim();
@@ -145,6 +148,7 @@ export function initStreams() {
   }
   sendMetadataEvents();
   setInterval(sendMetadataEvents, 30000);
+  setInterval(streamMonitor, 10000);
 }
 
 export function stats() {
@@ -197,4 +201,39 @@ export default function stream(
   }
 
   next();
+}
+
+/**
+ * Monitoring functions
+ */
+
+function streamMonitor() {
+  for (const id in streamStatus) {
+    const stream = streamStatus[id];
+    const timeNow = Date.now();
+
+    if (stream["lastTime"] === undefined) {
+      stream["lastTime"] = 0;
+    }
+
+    if (stream.lastTime < timeNow - 3000 || stream.status == 0) {
+      console.log("stream not running: " + stream.id);
+      //stream is not running and needs to be restarted
+      listenToStream(stream.id, stream.url);
+    }
+  }
+}
+
+function dataMonitor(id: string, data: Buffer) {
+  //Sometimes the stream is connected, but it does'nt send any data
+  //If no data are send from given stream, we need to restart it
+
+  /*
+  It will add timestamp when last data was send and then the stream monitor will check it once per 10s
+  If the timestamp is older than 2 seconds we need to restart the connection to the Icecast stream
+  */
+
+  if (data !== undefined && data.length > 0) {
+    streamStatus[id]["lastTime"] = Date.now();
+  }
 }

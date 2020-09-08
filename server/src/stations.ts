@@ -29,12 +29,6 @@ const stations: { url: string; id: string; name: string }[] = [
     id: "n10as",
     name: "n10.as",
   },
-  {
-    url:
-      "https://image.block.fm/uploads/audio/002c2686-2ee1-485b-b1af-475986696bab.mp3",
-    id: "blockfm",
-    name: "block.fm",
-  },
   { url: "https://wxpnhi.xpn.org/xpnhi-nopreroll", id: "wxpn", name: "WXPN" },
   {
     url: "http://icecast.vrtcdn.be/stubru-high.mp3",
