@@ -35,6 +35,11 @@ const stations: { url: string; id: string; name: string }[] = [
     id: "stubru",
     name: "StuBru",
   },
+  {
+    url: "https://freshgrass.streamguys1.com/folkalley-128mp3",
+    id: "folkalley",
+    name: "Folk Alley",
+  },
 ];
 
 export default stations;
