@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import icy, { IcyResponse } from "icy";
+import fpcalc from "fpcalc";
 
 import RingBuffer from "./RingBuffer";
 import stations from "./stations";
 import { pubsub, METADATA_RECEIVED } from "./pubsub";
+import { Stream } from "stream";
 
 interface Metadata {
   id: string;
@@ -30,6 +32,8 @@ const icecastStreams = new Map<string, IcyResponse | undefined>();
 const musicBuffer = new Map<string, RingBuffer>();
 // cache metadata so we can send more consistent events to the client
 const metadataCache = new Map<string, Metadata>();
+// chromacast streams that get piped to fpcalc for fingerprinting
+const chromaStreams = new Map<string, Stream>();
 
 function checkStreamId(id: string) {
   return stations.find(({ id: stationId }) => stationId === id);
@@ -69,6 +73,14 @@ function sendData(id: string, data: Buffer, res: IcyResponse) {
 
 function listenToStream(id: string, url: string) {
   icy.get(url, function (res) {
+    fpcalc(
+      res,
+      { command: "fpcalc -length 0 -ts -overlap -chunk 30" },
+      (data) => {
+        console.log(data);
+      }
+    );
+
     res.on("metadata", function (data: Buffer) {
       const { StreamTitle } = icy.parse(data);
       const metadata: Metadata = { id, artist: "", title: "" };

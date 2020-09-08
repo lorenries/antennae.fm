@@ -10,7 +10,8 @@
     "moduleResolution": "node",
     "typeRoots": ["./node_modules/@types", "src/types"],
     "paths": {
-      "icy": ["src/types/icy/index.d.ts"]
+      "icy": ["src/types/icy/index.d.ts"],
+      "fpcalc": ["src/types/fpcalc/index.d.ts"]
     },
     "types": ["node"],
     "esModuleInterop": true,
