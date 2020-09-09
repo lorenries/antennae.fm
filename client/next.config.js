@@ -1,9 +1,19 @@
-module.exports = {
+const withOffline = require("next-offline");
+
+module.exports = withOffline({
   env: {
     API_ROOT: process.env.API_ROOT || "https://api.antennae.fm",
     WS_ROOT: process.env.WS_ROOT || "wss://api.antennae.fm",
   },
-  webpack(config, options) {
+  workboxOpts: {
+    runtimeCaching: [
+      {
+        urlPattern: /.(png|svg|css|woff|woff2)$/,
+        handler: "CacheFirst",
+      },
+    ],
+  },
+  webpack(config) {
     /**
      * Optimize and load .svg files as react components with `svgr`
      */
@@ -27,4 +37,4 @@ module.exports = {
 
     return config;
   },
-};
+});
