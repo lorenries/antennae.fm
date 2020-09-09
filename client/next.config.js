@@ -8,7 +8,15 @@ module.exports = withOffline({
   workboxOpts: {
     runtimeCaching: [
       {
-        urlPattern: /.(png|svg|css|woff|woff2)$/,
+        urlPattern: /.(png|svg)$/,
+        handler: "CacheFirst",
+      },
+      {
+        urlPattern: /^https:\/\/fonts\.googleapis\.com/,
+        handler: "StaleWhileRevalidate",
+      },
+      {
+        urlPattern: /^https:\/\/fonts\.gstatic\.com/,
         handler: "CacheFirst",
       },
     ],
