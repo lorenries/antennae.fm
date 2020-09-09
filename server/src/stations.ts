@@ -40,6 +40,11 @@ const stations: { url: string; id: string; name: string }[] = [
     id: "wumb",
     name: "WUMB",
   },
+  {
+    url: "https://novazz.ice.infomaniak.ch/novazz-128.mp3",
+    id: "radionova",
+    name: "Radio Nova",
+  },
 ];
 
 export default stations;
