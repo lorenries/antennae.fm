@@ -75,7 +75,7 @@ function listenToStream(id: string, url: string) {
       const metadata: Metadata = { id, artist: "", title: "" };
 
       if (StreamTitle) {
-        if (id === "kcrw") {
+        if (/(kcrw|wumb)/.test(id)) {
           const [title, artist] = StreamTitle.split("-");
           metadata.title = title?.trim();
           metadata.artist = artist?.trim();

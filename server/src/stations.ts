@@ -36,9 +36,9 @@ const stations: { url: string; id: string; name: string }[] = [
     name: "StuBru",
   },
   {
-    url: "https://freshgrass.streamguys1.com/folkalley-128mp3",
-    id: "folkalley",
-    name: "Folk Alley",
+    url: "http://wumb.streamguys1.com/wumb919fast",
+    id: "wumb",
+    name: "WUMB",
   },
 ];
 
