@@ -304,7 +304,17 @@ function Home() {
     <div>
       <Head>
         <title>antennae.fm</title>
-        <link rel="icon" href="/favicon.ico" />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/images/icon-32.png"
+        />
+        <link
+          rel="apple-touch-icon"
+          sizes="192x192"
+          href="/images/icon-192.png"
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Anonymous+Pro:wght@400;700&display=swap"
           rel="stylesheet"
