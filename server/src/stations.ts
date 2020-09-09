@@ -45,6 +45,11 @@ const stations: { url: string; id: string; name: string }[] = [
     id: "radionova",
     name: "Radio Nova",
   },
+  {
+    url: "https://nova-dance.ice.infomaniak.ch/nova-dance-128",
+    id: "novadanse",
+    name: "Radio Nova Danse",
+  },
 ];
 
 export default stations;

@@ -80,7 +80,7 @@ function listenToStream(id: string, url: string) {
           metadata.title = title?.trim();
           metadata.artist = artist?.trim();
         } else {
-          const [artist, title] = StreamTitle.split(" - ");
+          const [artist, title] = StreamTitle.split("-");
           metadata.title = title?.trim();
           metadata.artist = artist?.trim();
         }
