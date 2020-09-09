@@ -304,6 +304,8 @@ function Home() {
     <div>
       <Head>
         <title>antennae.fm</title>
+        <meta name="description" content="pirate radio for the people" />
+        <meta name="theme-color" content="#171923" />
         <link
           rel="icon"
           type="image/png"
@@ -316,8 +318,17 @@ function Home() {
           href="/images/icon-192.png"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Anonymous+Pro:wght@400;700&display=swap"
+          rel="preload"
+          as="style"
+          href="https://fonts.googleapis.com/css2?family=Anonymous+Pro:wght@400;700&display=optional"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Anonymous+Pro:wght@400;700&display=optional"
           rel="stylesheet"
+          media="print"
+          // eslint-disable-next-line
+          // @ts-ignore
+          onLoad="this.media='all'"
         />
         <link rel="manifest" href="/manifest.webmanifest" />
       </Head>
