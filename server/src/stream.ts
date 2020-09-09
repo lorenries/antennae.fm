@@ -16,6 +16,7 @@ interface StreamStatus {
     id: string;
     url: string;
     lastTime?: number;
+    failures: number;
     status: 0 | 1;
   };
 }
@@ -144,7 +145,7 @@ function deleteUserStream(res: Response, id: string) {
 export function initStreams() {
   for (const { id, url } of stations) {
     listenToStream(id, url);
-    streamStatus[id] = { id, url, status: 0 };
+    streamStatus[id] = { id, url, status: 0, failures: 0 };
   }
   sendMetadataEvents();
   setInterval(sendMetadataEvents, 30000);
@@ -216,8 +217,14 @@ function streamMonitor() {
       stream["lastTime"] = 0;
     }
 
-    if (stream.lastTime < timeNow - 3000 || stream.status == 0) {
+    if (stream.status === 1) stream.failures = 0;
+
+    if (
+      (stream.lastTime < timeNow - 3000 || stream.status === 0) &&
+      stream.failures < 10
+    ) {
       console.log("stream not running: " + stream.id);
+      stream.failures++;
       //stream is not running and needs to be restarted
       listenToStream(stream.id, stream.url);
     }
