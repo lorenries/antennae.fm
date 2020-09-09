@@ -349,7 +349,13 @@ function Home() {
         justify="center"
         marginBottom={state.station !== undefined && 20}
       >
-        <SimpleGrid columns={[2, 3]} spacing={6} w="100%" maxW="5xl" px={4}>
+        <SimpleGrid
+          columns={[2, 3]}
+          spacing={[4, 6]}
+          w="100%"
+          maxW="5xl"
+          px={4}
+        >
           {data?.stations &&
             data.stations.map((station) => (
               <Station
