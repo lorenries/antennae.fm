@@ -390,8 +390,6 @@ function Home() {
       </Flex>
 
       {state.station !== undefined && <Player {...state} dispatch={dispatch} />}
-
-      <footer></footer>
     </div>
   );
 }
