@@ -4,13 +4,13 @@ import { pubsub, METADATA_RECEIVED } from "./pubsub";
 import { stats } from "./stream";
 
 const resolvers = {
-  Station: {
+  Stream: {
     url: ({ id }: { id: string }) =>
       `${process.env.API_ROOT || "http://localhost:8000"}/stream/${id}`,
   },
   StreamStatus: {},
   Query: {
-    stations: () => stations,
+    streams: () => stations,
     stats: () => {
       const { activeConnections, streamStatus } = stats();
       const status = Object.keys(streamStatus).map((key) => ({

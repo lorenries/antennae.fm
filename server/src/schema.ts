@@ -1,7 +1,7 @@
 import { gql } from "apollo-server-express";
 
 const typeDefs = gql`
-  type Station {
+  type Stream {
     id: ID!
     name: String!
     url: String!
@@ -15,7 +15,7 @@ const typeDefs = gql`
 
   type StreamStatus {
     id: ID!
-    stream: Station!
+    stream: Stream!
     status: Int!
   }
 
@@ -24,12 +24,16 @@ const typeDefs = gql`
     streamStatus: [StreamStatus]!
   }
 
+  type User {
+    id: ID!
+  }
+
   type Subscription {
     metadata(id: ID!): StreamMetadata
   }
 
   type Query {
-    stations: [Station]!
+    streams: [Stream]!
     stats: StreamStats!
   }
 `;
