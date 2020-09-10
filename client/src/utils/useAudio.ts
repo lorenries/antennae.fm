@@ -7,6 +7,7 @@ export default function useAudio(src: string) {
   >();
 
   function play() {
+    setState("loading");
     ref.current.load();
     ref.current.play();
   }
@@ -32,7 +33,6 @@ export default function useAudio(src: string) {
 
   useEffect(() => {
     ref.current.src = src;
-    setState("loading");
     play();
   }, [src]);
 
