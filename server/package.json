@@ -27,7 +27,8 @@
     "graphql-redis-subscriptions": "^2.3.1",
     "graphql-subscriptions": "^1.1.0",
     "icy": "^2.1.0",
-    "ioredis": "^4.17.3"
+    "ioredis": "^4.17.3",
+    "pm2": "^4.4.1"
   },
   "volta": {
     "node": "12.18.3"

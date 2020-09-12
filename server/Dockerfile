@@ -16,6 +16,7 @@ FROM node:12-alpine
 
 ENV NODE_ENV production
 ENV PORT 8000
+ENV PATH /opt/app/node_modules/.bin:$PATH
 
 RUN mkdir -p /opt/app
 RUN chown node:node /opt/app
@@ -26,4 +27,4 @@ USER node
 
 EXPOSE 8000
 
-CMD [ "node", "dist/index.js" ]
+CMD [ "pm2-runtime", "dist/index.js" ]
