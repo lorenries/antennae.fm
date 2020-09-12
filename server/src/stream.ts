@@ -101,6 +101,13 @@ function listenToStream(id: string, url: string) {
       sendData(id, data, res);
     });
 
+    res.on("error", function () {
+      if (streamStatus[id] !== undefined) {
+        //stream is OFF
+        streamStatus[id].status = 0;
+      }
+    });
+
     //If stream for the same icecast already running, replace it
     if (icecastStreams.get(id) !== undefined) {
       icecastStreams.set(id, undefined);
