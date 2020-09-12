@@ -3,8 +3,8 @@ import { gql } from "apollo-server-express";
 const typeDefs = gql`
   type Stream {
     id: ID!
-    name: String!
     url: String!
+    name: String
   }
 
   type StreamMetadata {
@@ -26,6 +26,13 @@ const typeDefs = gql`
 
   type User {
     id: ID!
+    username: String!
+    streams: [Stream]!
+  }
+
+  type AuthPayload {
+    token: String!
+    user: User!
   }
 
   type Subscription {
@@ -35,6 +42,13 @@ const typeDefs = gql`
   type Query {
     streams: [Stream]!
     stats: StreamStats!
+  }
+
+  type Mutation {
+    signup(username: String!, password: String!): AuthPayload
+    login(username: String!, password: String!): AuthPayload
+    updatePassword(username: String!, password: String!): AuthPayload
+    addStream(url: String!, name: String!): Stream
   }
 `;
 

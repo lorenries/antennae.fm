@@ -9,3 +9,33 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id         Int          @default(autoincrement()) @id
+  username   String       @unique
+  password   String
+  role       Role
+  streams    Stream[]
+  streamInfo StreamInfo[]
+}
+
+model Stream {
+  id         Int          @default(autoincrement()) @id
+  url        String       @unique
+  users      User[]
+  streamInfo StreamInfo[]
+}
+
+model StreamInfo {
+  id       Int    @default(autoincrement()) @id
+  name     String
+  stream   Stream @relation(fields: [streamId], references: [id])
+  user     User   @relation(fields: [userId], references: [id])
+  userId   Int
+  streamId Int
+}

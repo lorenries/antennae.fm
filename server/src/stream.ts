@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import icy, { IcyResponse } from "icy";
 
+import { prisma } from "./context";
 import RingBuffer from "./RingBuffer";
-import stations from "./stations";
 import { pubsub, METADATA_RECEIVED } from "./pubsub";
 
 interface Metadata {
@@ -33,7 +33,7 @@ const musicBuffer = new Map<string, RingBuffer>();
 const metadataCache = new Map<string, Metadata>();
 
 function checkStreamId(id: string) {
-  return stations.find(({ id: stationId }) => stationId === id);
+  return !!streamStatus[id];
 }
 
 function sendInitialBuffer(res: Response, id: string) {
@@ -115,6 +115,13 @@ function listenToStream(id: string, url: string) {
 
     icecastStreams.set(id, res);
 
+    res.on("error", function () {
+      if (streamStatus[id] !== undefined) {
+        //stream is OFF
+        streamStatus[id].status = 0;
+      }
+    });
+
     res.on("end", function () {
       if (streamStatus[id] !== undefined) {
         //stream is OFF
@@ -149,8 +156,11 @@ function deleteUserStream(res: Response, id: string) {
   }
 }
 
-export function initStreams() {
-  for (const { id, url } of stations) {
+export async function initStreams() {
+  const streams = await prisma.stream.findMany();
+
+  for (const { id: num, url } of streams) {
+    const id = num.toString();
     listenToStream(id, url);
     streamStatus[id] = { id, url, status: 0, failures: 0 };
   }

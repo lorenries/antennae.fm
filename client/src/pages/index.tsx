@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import Head from "next/head";
 import { Flex, Box, SimpleGrid, Spinner } from "@chakra-ui/core";
 import { css } from "@emotion/core";
 import { useQuery, useSubscription } from "urql";
@@ -255,7 +254,7 @@ export default function Home() {
         </SimpleGrid>
       </Flex>
 
-      {activeStream !== undefined && <Player {...activeStream} />}
+      {activeStream && <Player {...activeStream} />}
     </div>
   );
 }
