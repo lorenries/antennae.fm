@@ -2,11 +2,15 @@ import { PubSub } from "apollo-server-express";
 import { RedisPubSub } from "graphql-redis-subscriptions";
 import Redis from "ioredis";
 
+import { parseRedisConf } from "./utils";
+
 export const METADATA_RECEIVED = "METADATA_RECEIVED";
 
-export const pubsub = process.env.REDIS_URL
+const redisConf = parseRedisConf(process.env.REDIS_URL);
+
+export const pubsub = redisConf
   ? new RedisPubSub({
-      publisher: new Redis(process.env.REDIS_URL),
-      subscriber: new Redis(process.env.REDIS_URL),
+      publisher: new Redis(redisConf),
+      subscriber: new Redis(redisConf),
     })
   : new PubSub();

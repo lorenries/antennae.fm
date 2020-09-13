@@ -1,5 +1,6 @@
 import { verify } from "jsonwebtoken";
 import { Context } from "./context";
+import { URL } from "url";
 
 interface Token {
   id: string;
@@ -8,14 +9,6 @@ interface Token {
 }
 
 export const APP_SECRET = process.env.APP_SECRET || "secret";
-
-export function atob(str: string) {
-  return Buffer.from(str, "base64").toString("binary");
-}
-
-export function btoa(str: string) {
-  return Buffer.from(str, "binary").toString("base64");
-}
 
 export function getUserFromSubscription({
   Authorization,
@@ -49,4 +42,22 @@ export function isAdmin(context: Context) {
   }
 
   return false;
+}
+
+export function parseRedisConf(url: string | undefined) {
+  if (url) {
+    const parsedURL = new URL(url);
+    return {
+      host: parsedURL.hostname || "127.0.0.1",
+      port: Number(parsedURL.port || 6379),
+      username: parsedURL.username
+        ? decodeURIComponent(parsedURL.username)
+        : undefined,
+      password: parsedURL.password
+        ? decodeURIComponent(parsedURL.password)
+        : undefined,
+    };
+  } else {
+    return undefined;
+  }
 }

@@ -32,8 +32,8 @@ const musicBuffer = new Map<string, RingBuffer>();
 // cache metadata so we can send more consistent events to the client
 const metadataCache = new Map<string, Metadata>();
 
-function checkStreamId(id: string) {
-  return !!streamStatus[id];
+function checkStream(id: string) {
+  return !!streamStatus[id] && streamStatus[id].status === 1;
 }
 
 function sendInitialBuffer(res: Response, id: string) {
@@ -185,12 +185,13 @@ export default function stream(
 ) {
   const id = req.params.id;
 
-  if (checkStreamId(id)) {
+  if (checkStream(id)) {
     if (!streamClients.has(id)) {
       streamClients.set(id, []);
     }
 
     res.setHeader("Content-Type", "audio/mpeg");
+
     const client = streamClients.get(id);
     if (client) {
       client.push(res);

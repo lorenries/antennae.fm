@@ -57,10 +57,12 @@ const resolvers = {
     },
   },
   Query: {
-    streams: async (_parent: any, _args: any, ctx: any) => {
+    streams: async (_parent: any, _args: any, ctx: any, info: any) => {
       const id = getUserId(ctx);
 
       if (id) {
+        info.cacheControl.setCacheHint({ maxAge: 3600, scope: "PRIVATE" });
+
         const streams = await prisma.stream.findMany({
           where: {
             users: {
@@ -164,28 +166,61 @@ const resolvers = {
     addStream: async (_parent: any, { url, name }: any, ctx: any) => {
       const userId = getUserId(ctx);
 
-      const stream = await prisma.stream.create({
-        data: {
+      const existingStream = await prisma.stream.findOne({
+        where: {
           url,
-          users: {
-            connect: {
-              id: Number(userId),
-            },
+        },
+      });
+
+      if (existingStream) {
+        const stream = await prisma.stream.update({
+          where: {
+            id: existingStream.id,
           },
-          streamInfo: {
-            create: {
-              name,
-              user: {
-                connect: {
-                  id: Number(userId),
+          data: {
+            users: {
+              connect: {
+                id: Number(userId),
+              },
+            },
+            streamInfo: {
+              create: {
+                name,
+                user: {
+                  connect: {
+                    id: Number(userId),
+                  },
                 },
               },
             },
           },
-        },
-      });
+        });
 
-      return stream;
+        return stream;
+      } else {
+        const stream = await prisma.stream.create({
+          data: {
+            url,
+            users: {
+              connect: {
+                id: Number(userId),
+              },
+            },
+            streamInfo: {
+              create: {
+                name,
+                user: {
+                  connect: {
+                    id: Number(userId),
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        return stream;
+      }
     },
   },
   Subscription: {
