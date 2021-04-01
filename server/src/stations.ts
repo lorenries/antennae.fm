@@ -1,6 +1,6 @@
 const stations: { url: string; id: string; name: string }[] = [
   {
-    url: "http://bbcmedia.ic.llnwd.net/stream/bbcmedia_6music_mf_p",
+    url: "http://stream.live.vc.bbcmedia.co.uk/bbc_6music",
     id: "bbc6",
     name: "BBC6",
   },
