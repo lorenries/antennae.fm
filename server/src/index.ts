@@ -1,5 +1,6 @@
 import express from "express";
 import http from "http";
+import cors from "cors";
 import { ApolloServer } from "apollo-server-express";
 
 import typeDefs from "./schema";
@@ -16,7 +17,12 @@ const server = new ApolloServer({
   },
 });
 
-server.applyMiddleware({ app });
+server.applyMiddleware({
+  app,
+  cors: {
+    origin: ["https://antennae.fm", "http://localhost:3000"],
+  },
+});
 
 // create an http server for websockets
 const httpServer = http.createServer(app);
