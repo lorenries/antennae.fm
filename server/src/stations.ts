@@ -41,9 +41,9 @@ const stations: { url: string; id: string; name: string }[] = [
     name: "WUMB",
   },
   {
-    url: "https://novazz.ice.infomaniak.ch/novazz-128.mp3",
-    id: "radionova",
-    name: "Radio Nova",
+    url: "http://stream.kalx.berkeley.edu:8000/kalx-128.mp3",
+    id: "kalx",
+    name: "KALX",
   },
   {
     url: "https://nova-dance.ice.infomaniak.ch/nova-dance-128",
