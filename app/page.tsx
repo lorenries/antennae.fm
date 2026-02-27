@@ -1,47 +1,14 @@
 "use client";
 
-import { ExternalLink, Loader2, Pause, Play } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Loader2, Pause, Play } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useAudio } from "@/hooks/useAudio";
 
 type Stream = {
   id: string;
   name: string;
   url: string;
-  metadataUrl: string;
 };
-
-type Metadata = {
-  id: string;
-  title: string;
-  artist: string;
-};
-
-function useMetadata(id?: string) {
-  const [metadata, setMetadata] = useState<Metadata | null>(null);
-
-  useEffect(() => {
-    if (!id) {
-      setMetadata(null);
-      return;
-    }
-
-    const source = new EventSource(`/api/metadata/${id}`);
-    source.onmessage = (event) => {
-      try {
-        setMetadata(JSON.parse(event.data));
-      } catch {
-        // ignore malformed payloads
-      }
-    };
-
-    return () => {
-      source.close();
-    };
-  }, [id]);
-
-  return metadata;
-}
 
 function StreamCard({
   stream,
@@ -52,7 +19,6 @@ function StreamCard({
   activeStream?: Stream;
   onSelect: (next: Stream) => void;
 }) {
-  const metadata = useMetadata(stream.id);
   const isActive = activeStream?.id === stream.id;
 
   return (
@@ -66,30 +32,13 @@ function StreamCard({
       } bg-[var(--surface)] hover:bg-[#202a38]`}
     >
       <span className="text-base font-bold">{stream.name}</span>
-      {metadata && (
-        <span className="text-xs text-[var(--muted)]">
-          {metadata.title}
-          {metadata.title && metadata.artist ? " - " : ""}
-          {metadata.artist}
-        </span>
-      )}
+      <span className="text-xs text-[var(--muted)]">{stream.id}</span>
     </button>
   );
 }
 
 function Player({ stream }: { stream: Stream }) {
-  const metadata = useMetadata(stream.id);
   const { ref, play, pause, isPlaying, isLoading } = useAudio(stream.url);
-
-  const track = useMemo(() => {
-    if (!metadata) {
-      return stream.name;
-    }
-    const merged = [metadata.title, metadata.artist]
-      .filter(Boolean)
-      .join(" - ");
-    return merged || stream.name;
-  }, [metadata, stream.name]);
 
   return (
     <div className="fixed bottom-0 left-0 w-full border-t border-[var(--line)] bg-[var(--surface)]">
@@ -109,23 +58,16 @@ function Player({ stream }: { stream: Stream }) {
           )}
         </button>
         <p className="line-clamp-1 flex-1 text-sm text-[var(--text)] md:text-base">
-          {track}
+          {stream.name}
         </p>
-        {metadata?.title && metadata.artist ? (
-          <a
-            className="inline-flex items-center gap-1 rounded border border-[#1ed760] px-3 py-1 text-xs text-[#1ed760]"
-            href={`spotify:search:${encodeURIComponent(`${metadata.title} ${metadata.artist}`)}`}
-            aria-label="Open in Spotify"
-          >
-            Spotify
-            <ExternalLink className="size-3.5" />
-          </a>
-        ) : (
-          <span className="text-xs text-[var(--muted)]">{stream.name}</span>
-        )}
+        <span className="text-xs text-[var(--muted)]">{stream.id}</span>
       </div>
-      {/* biome-ignore lint/a11y/useMediaCaption: live radio streams do not provide caption tracks. */}
-      <audio ref={ref} className="hidden" />
+      {/* biome-ignore lint/a11y/useMediaCaption: this is hidden background radio playback with no visual media context. */}
+      <video
+        ref={ref}
+        className="pointer-events-none absolute h-px w-px opacity-0"
+        playsInline
+      />
     </div>
   );
 }

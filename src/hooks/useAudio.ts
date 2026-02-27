@@ -1,5 +1,6 @@
 "use client";
 
+import type Hls from "hls.js";
 import { useEffect, useRef, useState } from "react";
 
 function isHlsSource(src: string) {
@@ -7,18 +8,25 @@ function isHlsSource(src: string) {
 }
 
 export function useAudio(src: string) {
-  const ref = useRef<HTMLAudioElement | null>(null);
-  const hlsRef = useRef<{ destroy: () => void } | null>(null);
+  const ref = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const [state, setState] = useState<"playing" | "paused" | "loading">(
     "paused",
   );
 
-  const tryPlay = async (audio: HTMLAudioElement) => {
+  const tryPlay = async (audio: HTMLVideoElement) => {
+    audio.muted = false;
+    audio.volume = 1;
     setState("loading");
+
     try {
       await audio.play();
-    } catch {
-      setState("paused");
+    } catch (error) {
+      const isAbortError =
+        error instanceof DOMException && error.name === "AbortError";
+      if (!isAbortError) {
+        setState("paused");
+      }
     }
   };
 
@@ -27,11 +35,13 @@ export function useAudio(src: string) {
     if (!audio) {
       return;
     }
+    hlsRef.current?.startLoad(-1);
     await tryPlay(audio);
   };
 
   const pause = () => {
     ref.current?.pause();
+    setState("paused");
   };
 
   useEffect(() => {
@@ -42,13 +52,19 @@ export function useAudio(src: string) {
 
     const onPlaying = () => setState("playing");
     const onPause = () => setState("paused");
+    const onWaiting = () => setState("loading");
+    const onError = () => setState("paused");
 
     audio.addEventListener("playing", onPlaying);
     audio.addEventListener("pause", onPause);
+    audio.addEventListener("waiting", onWaiting);
+    audio.addEventListener("error", onError);
 
     return () => {
       audio.removeEventListener("playing", onPlaying);
       audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("waiting", onWaiting);
+      audio.removeEventListener("error", onError);
     };
   }, []);
 
@@ -74,33 +90,55 @@ export function useAudio(src: string) {
         return;
       }
 
+      const { default: Hls } = await import("hls.js");
+      if (canceled) {
+        return;
+      }
+
+      if (Hls.isSupported()) {
+        const hls = new Hls({ lowLatencyMode: true });
+        hlsRef.current = hls;
+
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+          hls.loadSource(src);
+        });
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          void tryPlay(audio);
+        });
+
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (!data.fatal) {
+            return;
+          }
+
+          setState("paused");
+
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            hls.startLoad();
+            return;
+          }
+
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.recoverMediaError();
+            return;
+          }
+
+          hls.destroy();
+          hlsRef.current = null;
+        });
+
+        hls.attachMedia(audio);
+        return;
+      }
+
       if (audio.canPlayType("application/vnd.apple.mpegurl")) {
         audio.src = src;
         await tryPlay(audio);
         return;
       }
 
-      const { default: Hls } = await import("hls.js");
-      if (canceled) {
-        return;
-      }
-
-      if (!Hls.isSupported()) {
-        audio.src = src;
-        await tryPlay(audio);
-        return;
-      }
-
-      const hls = new Hls();
-      hlsRef.current = hls;
-      hls.loadSource(src);
-      hls.attachMedia(audio);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        void tryPlay(audio);
-      });
-      hls.on(Hls.Events.ERROR, () => {
-        setState("paused");
-      });
+      setState("paused");
     };
 
     void setupSource();
@@ -109,7 +147,6 @@ export function useAudio(src: string) {
       canceled = true;
       destroyHls();
       audio.removeAttribute("src");
-      audio.load();
       setState("paused");
     };
   }, [src]);
