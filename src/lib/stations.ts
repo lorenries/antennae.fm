@@ -12,9 +12,10 @@ export const stations: Station[] = [
     name: "BBC6",
   },
   {
-    url: "https://dublab.out.airtime.pro/dublab_a",
+    url: "https://nyc-prod-catalyst-0.lp-playback.studio/hls/video+8d33n2at0gq7aud6/1_0/index.m3u8",
     id: "dublab",
     name: "Dublab",
+    useProxy: false,
   },
   {
     url: "https://kcrw.streamguys1.com/kcrw_192k_mp3_e24",
@@ -62,6 +63,11 @@ export const stations: Station[] = [
     id: "thelot",
     name: "The Lot",
     useProxy: false,
+  },
+  {
+    url: "https://kioskradiobxl.out.airtime.pro/kioskradiobxl_a",
+    id: "kiosk",
+    name: "Kiosk",
   },
 ];
 
