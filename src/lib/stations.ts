@@ -3,6 +3,8 @@ export type Station = {
   name: string;
   url: string;
   useProxy?: boolean;
+  metadataStrategy?: "icy" | "none";
+  metadataSplit?: "artist-title" | "title-artist";
 };
 
 export const stations: Station[] = [
@@ -20,16 +22,12 @@ export const stations: Station[] = [
     url: "https://streams.kcrw.com/kcrw_mp3",
     id: "kcrw",
     name: "KCRW",
+    metadataSplit: "title-artist",
   },
   {
     url: "http://s-00.wefunkradio.com:81/wefunk64.mp3",
     id: "wefunk",
     name: "WEFUNK",
-  },
-  {
-    url: "https://balamii.out.airtime.pro:8000/balamii_a",
-    id: "balamii",
-    name: "Balamii",
   },
   {
     url: "https://n10as.radiocult.fm/stream",
@@ -47,6 +45,7 @@ export const stations: Station[] = [
     url: "http://wumb.streamguys1.com/wumb919fast",
     id: "wumb",
     name: "WUMB",
+    metadataSplit: "title-artist",
   },
   {
     url: "http://stream.kalx.berkeley.edu:8000/kalx-128.mp3",
@@ -63,6 +62,7 @@ export const stations: Station[] = [
     id: "thelot",
     name: "The Lot",
     useProxy: false,
+    metadataStrategy: "none",
   },
   {
     url: "https://kioskradiobxl.out.airtime.pro/kioskradiobxl_a",
