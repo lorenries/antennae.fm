@@ -1,5 +1,6 @@
 "use client";
 
+import { ExternalLink, Loader2, Pause, Play } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAudio } from "@/hooks/useAudio";
 
@@ -97,19 +98,27 @@ function Player({ stream }: { stream: Stream }) {
           type="button"
           aria-label={isPlaying ? "Pause" : "Play"}
           onClick={isPlaying ? pause : play}
-          className="size-10 rounded border border-[var(--accent)] text-xl leading-none text-[var(--accent)]"
+          className="flex size-10 items-center justify-center rounded border border-[var(--accent)] text-[var(--accent)]"
         >
-          {isLoading ? "…" : isPlaying ? "II" : ">"}
+          {isLoading ? (
+            <Loader2 className="size-5 animate-spin" />
+          ) : isPlaying ? (
+            <Pause className="size-5" />
+          ) : (
+            <Play className="size-5" />
+          )}
         </button>
         <p className="line-clamp-1 flex-1 text-sm text-[var(--text)] md:text-base">
           {track}
         </p>
         {metadata?.title && metadata.artist ? (
           <a
-            className="rounded border border-[#1ed760] px-3 py-1 text-xs text-[#1ed760]"
+            className="inline-flex items-center gap-1 rounded border border-[#1ed760] px-3 py-1 text-xs text-[#1ed760]"
             href={`spotify:search:${encodeURIComponent(`${metadata.title} ${metadata.artist}`)}`}
+            aria-label="Open in Spotify"
           >
             Spotify
+            <ExternalLink className="size-3.5" />
           </a>
         ) : (
           <span className="text-xs text-[var(--muted)]">{stream.name}</span>
