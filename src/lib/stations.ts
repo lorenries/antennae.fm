@@ -8,11 +8,11 @@ export type Station = {
 };
 
 export const stations: Station[] = [
-  {
-    url: "http://stream.live.vc.bbcmedia.co.uk/bbc_6music",
-    id: "bbc6",
-    name: "BBC6",
-  },
+  // {
+  //   url: "http://stream.live.vc.bbcmedia.co.uk/bbc_6music",
+  //   id: "bbc6",
+  //   name: "BBC6",
+  // },
   {
     url: "https://dublab.out.airtime.pro/dublab_a",
     id: "dublab",
