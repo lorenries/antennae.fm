@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "hls.js": "^1.6.15",
     "icy": "latest",
     "next": "latest",
     "react": "latest",

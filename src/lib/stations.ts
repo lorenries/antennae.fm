@@ -2,6 +2,7 @@ export type Station = {
   id: string;
   name: string;
   url: string;
+  useProxy?: boolean;
 };
 
 export const stations: Station[] = [
@@ -55,6 +56,12 @@ export const stations: Station[] = [
     url: "https://nova-dance.ice.infomaniak.ch/nova-dance-128",
     id: "novadanse",
     name: "Radio Nova Danse",
+  },
+  {
+    url: "https://nyc-prod-catalyst-0.lp-playback.studio/hls/video+85c28sa2o8wppm58/1_0/index.m3u8",
+    id: "thelot",
+    name: "The Lot",
+    useProxy: false,
   },
 ];
 

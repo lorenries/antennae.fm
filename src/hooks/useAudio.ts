@@ -2,20 +2,32 @@
 
 import { useEffect, useRef, useState } from "react";
 
+function isHlsSource(src: string) {
+  return src.includes(".m3u8");
+}
+
 export function useAudio(src: string) {
   const ref = useRef<HTMLAudioElement | null>(null);
+  const hlsRef = useRef<{ destroy: () => void } | null>(null);
   const [state, setState] = useState<"playing" | "paused" | "loading">(
     "paused",
   );
 
-  const play = () => {
+  const tryPlay = async (audio: HTMLAudioElement) => {
+    setState("loading");
+    try {
+      await audio.play();
+    } catch {
+      setState("paused");
+    }
+  };
+
+  const play = async () => {
     const audio = ref.current;
     if (!audio) {
       return;
     }
-    setState("loading");
-    audio.load();
-    void audio.play();
+    await tryPlay(audio);
   };
 
   const pause = () => {
@@ -41,11 +53,65 @@ export function useAudio(src: string) {
   }, []);
 
   useEffect(() => {
-    if (!ref.current) {
+    const audio = ref.current;
+    if (!audio) {
       return;
     }
-    ref.current.src = src;
-    play();
+
+    let canceled = false;
+
+    const destroyHls = () => {
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
+    };
+
+    const setupSource = async () => {
+      destroyHls();
+
+      if (!isHlsSource(src)) {
+        audio.src = src;
+        await tryPlay(audio);
+        return;
+      }
+
+      if (audio.canPlayType("application/vnd.apple.mpegurl")) {
+        audio.src = src;
+        await tryPlay(audio);
+        return;
+      }
+
+      const { default: Hls } = await import("hls.js");
+      if (canceled) {
+        return;
+      }
+
+      if (!Hls.isSupported()) {
+        audio.src = src;
+        await tryPlay(audio);
+        return;
+      }
+
+      const hls = new Hls();
+      hlsRef.current = hls;
+      hls.loadSource(src);
+      hls.attachMedia(audio);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        void tryPlay(audio);
+      });
+      hls.on(Hls.Events.ERROR, () => {
+        setState("paused");
+      });
+    };
+
+    void setupSource();
+
+    return () => {
+      canceled = true;
+      destroyHls();
+      audio.removeAttribute("src");
+      audio.load();
+      setState("paused");
+    };
   }, [src]);
 
   return {

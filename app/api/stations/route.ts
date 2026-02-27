@@ -11,7 +11,8 @@ export async function GET() {
     streams: stations.map((station) => ({
       id: station.id,
       name: station.name,
-      url: `/api/stream/${station.id}`,
+      url:
+        station.useProxy === false ? station.url : `/api/stream/${station.id}`,
       metadataUrl: `/api/metadata/${station.id}`,
     })),
   });
