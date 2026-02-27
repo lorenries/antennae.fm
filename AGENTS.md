@@ -2,27 +2,33 @@
 
 ## Project Nature
 
-- `antennae.fm` is a small internet radio web app.
-- It is split into two Node/TypeScript apps:
-  - `client/`: Next.js frontend using `urql` and GraphQL subscriptions over WebSocket.
-  - `server/`: Express + Apollo GraphQL API that proxies radio streams and emits live metadata.
-- `docker-compose.yml` provides local Redis and API services.
+- `antennae.fm` is a single Next.js (App Router) internet radio app.
+- The app serves both UI and backend endpoints from one codebase.
+- Core runtime behavior:
+  - Station listing via API route
+  - Audio stream proxying for selected stations
+  - Optional track metadata over SSE for supported streams
 
 ## Environment
 
-- Node.js `12.18.3` (pinned via Volta in both apps; engine target is Node 12.x).
-- Yarn 1.x package management.
-- TypeScript in both `client/` and `server/`.
-- Optional Redis for production-like GraphQL PubSub behavior.
+- Node.js 20+
+- pnpm 10+
+- TypeScript
+- Next.js + React
+- Tailwind CSS
+- Biome for formatting/linting
 
 ## Project Structure
 
 ```
-client/             — Next.js app (pages, UI, audio hooks, GraphQL client)
-server/             — Express/Apollo GraphQL + stream proxy + metadata publishing
-server/src/         — core backend modules (schema, resolvers, streams, stations, pubsub)
-docker-compose.yml  — local Redis + API stack
-README.md           — canonical setup/run documentation
+app/                    — Next.js app router pages + API routes
+app/api/stations/       — station listing endpoint
+app/api/stream/[id]/    — stream proxy endpoint
+app/api/metadata/[id]/  — SSE metadata endpoint
+src/lib/stations.ts     — station source of truth
+src/lib/radio.ts        — metadata service/parsing
+src/hooks/useAudio.ts   — client playback hook
+README.md               — setup/run documentation
 ```
 
 ## Development Commands
@@ -30,33 +36,21 @@ README.md           — canonical setup/run documentation
 ### Install dependencies
 
 ```bash
-cd client && yarn
-cd ../server && yarn
+pnpm install
 ```
 
 ### Run locally
 
 ```bash
-# Terminal 1
-cd server
-yarn start
-
-# Terminal 2
-cd client
-API_ROOT=http://localhost:8000 WS_ROOT=ws://localhost:8000 yarn dev
-```
-
-### Docker-backed API + Redis
-
-```bash
-docker compose up --build
+pnpm dev
 ```
 
 ### Build and quality checks
 
 ```bash
-cd client && yarn lint && yarn build
-cd ../server && yarn build
+pnpm lint
+pnpm typecheck
+pnpm build
 ```
 
 ## Coding Guidelines
@@ -64,26 +58,26 @@ cd ../server && yarn build
 - Prefer minimal, targeted changes over broad rewrites.
 - Keep naming consistent: camelCase for variables/functions, PascalCase for components/types.
 - Keep imports at the top of files (no inline imports).
-- Do not swallow errors; handle them explicitly with clear messages.
-- For GraphQL changes:
-  - Keep `server/src/schema.ts` and `server/src/resolvers.ts` aligned.
-  - Preserve subscription behavior and topic naming consistency.
+- Handle error paths explicitly.
 - For stream changes:
-  - Update `server/src/stations.ts` as source of truth for station definitions.
-  - Avoid breaking the `/stream/:id` proxy path contract used by the client.
+  - Keep `src/lib/stations.ts` as source of truth.
+  - Preserve `/api/stream/[id]` contract for proxied streams.
+- For metadata changes:
+  - Ensure unsupported streams gracefully fall back in UI.
+  - Keep SSE payloads backward-compatible unless requested otherwise.
 
 ## Testing and Validation Expectations
 
-- There is no comprehensive automated test suite currently configured at repo root.
-- For most changes, validate by:
-  - `client`: `yarn lint` and `yarn build`
-  - `server`: `yarn build`
-  - Manual smoke check of GraphQL query/subscription flow when backend behavior changes.
-- If you introduce non-trivial logic, add tests where practical rather than skipping validation.
+- There is no comprehensive automated test suite currently configured.
+- For most changes, validate with:
+  - `pnpm lint`
+  - `pnpm typecheck`
+  - `pnpm build` for integration-level confidence
+- For playback/stream changes, perform a manual smoke test in browser.
 
 ## Workflow Preferences
 
-- Use plan mode for multi-step or architecture-impacting work before editing.
+- Use plan mode for multi-step or architecture-impacting work.
 - Keep commits scoped and descriptive (`feat:`, `fix:`, `chore:` style).
 - Do not run destructive git commands unless explicitly requested.
 - Do not push or create PRs unless the user asks.
@@ -93,8 +87,7 @@ cd ../server && yarn build
 - Write clear, concise commit messages with conventional prefixes (`feat:`, `fix:`, `chore:`).
 - Focus commit messages on what changed and why.
 - Before pushing, validate relevant parts of the project:
-  - `client`: `yarn lint && yarn build`
-  - `server`: `yarn build`
+  - `pnpm lint && pnpm typecheck && pnpm build`
 - If a push is requested, run `git pull --rebase` first when appropriate.
 
 ## Task and PR Workflow (for larger requests)
@@ -110,14 +103,14 @@ When the user asks for a long-running task or multi-step project, use this workf
 ### 2. Create GitHub Issue (if requested)
 
 ```bash
-gh issue create --title "feat: <short description>" --body "$(cat <<'EOF'
+gh issue create --title "feat: <short description>" --body "$(cat <<'EOT'
 ## Summary
 <1-2 sentence overview>
 
 ## Tasks
 - [ ] Task 1
 - [ ] Task 2
-EOF
+EOT
 )"
 ```
 
@@ -130,8 +123,7 @@ EOF
 2. **Code** - implement with focused, incremental commits.
 3. **Validate** - run:
    ```bash
-   cd client && yarn lint && yarn build
-   cd ../server && yarn build
+   pnpm lint && pnpm typecheck && pnpm build
    ```
 4. **Push** - when requested:
    ```bash
@@ -141,7 +133,7 @@ EOF
 ### 4. Open Pull Request (when requested)
 
 ```bash
-gh pr create --title "feat: <description>" --body "$(cat <<'EOF'
+gh pr create --title "feat: <description>" --body "$(cat <<'EOT'
 ## Summary
 <what this PR does>
 
@@ -149,7 +141,7 @@ Closes #<issue-number>
 
 ## Open Questions
 - (remove if none)
-EOF
+EOT
 )"
 ```
 
@@ -170,5 +162,5 @@ EOF
 
 ## Notes for Agents
 
-- Existing runtime centers on stream proxying + metadata subscriptions; Prisma schema may exist but is not part of the current request flow.
-- Default to preserving existing API shape unless the user explicitly asks for schema/contract changes.
+- Prefer direct stream source updates in `src/lib/stations.ts` rather than ad hoc overrides.
+- Keep playback resilient: unsupported metadata should never block audio playback.
