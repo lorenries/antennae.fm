@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { type Metadata, radioService } from "@/lib/radio";
+import { type TrackMetadata, trackMetadataService } from "@/lib/radio";
 import { getStationById } from "@/lib/stations";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function toSse(payload: Metadata) {
+function toSse(payload: TrackMetadata) {
   return `data: ${JSON.stringify(payload)}\n\n`;
 }
 
@@ -13,7 +13,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  radioService.start();
+  trackMetadataService.start();
 
   const { id } = await params;
   if (!getStationById(id)) {
@@ -26,7 +26,7 @@ export async function GET(
     start(controller) {
       controller.enqueue(encoder.encode(": connected\n\n"));
 
-      const unsubscribe = radioService.subscribe(id, (metadata) => {
+      const unsubscribe = trackMetadataService.subscribe(id, (metadata) => {
         controller.enqueue(encoder.encode(toSse(metadata)));
       });
 

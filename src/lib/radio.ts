@@ -1,57 +1,130 @@
 import icy from "icy";
-import { stations } from "@/lib/stations";
+import { getStationById, type Station, stations } from "@/lib/stations";
 
-export type Metadata = {
+export type TrackMetadata = {
   id: string;
-  title: string;
-  artist: string;
+  available: boolean;
+  title: string | null;
+  artist: string | null;
+  raw: string | null;
+  source: "icy" | "none";
+  updatedAt: string;
 };
 
-type StreamStatus = {
-  id: string;
-  url: string;
-  lastTime: number;
-  failures: number;
-  status: 0 | 1;
-};
+type TrackListener = (payload: TrackMetadata) => void;
 
-type MetadataListener = (metadata: Metadata) => void;
+function metadataStrategy(station: Station): "icy" | "none" {
+  if (station.metadataStrategy) {
+    return station.metadataStrategy;
+  }
 
-class RadioService {
-  private readonly metadataCache = new Map<string, Metadata>();
-  private readonly listeners = new Map<string, Set<MetadataListener>>();
-  private readonly streamStatus = new Map<string, StreamStatus>();
-  private readonly reconnectTimers = new Map<string, NodeJS.Timeout>();
+  if (station.url.includes(".m3u8")) {
+    return "none";
+  }
+
+  return "icy";
+}
+
+function baseFallback(station: Station): TrackMetadata {
+  const strategy = metadataStrategy(station);
+  return {
+    id: station.id,
+    available: strategy === "icy",
+    title: null,
+    artist: null,
+    raw: null,
+    source: strategy,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function parseStreamTitle(
+  station: Station,
+  streamTitle: string,
+): Omit<TrackMetadata, "id" | "updatedAt" | "available" | "source"> | null {
+  const raw = streamTitle.split("\0").join("").trim();
+  if (!raw) {
+    return null;
+  }
+
+  const split = station.metadataSplit ?? "artist-title";
+  const parts = raw.split(/\s[-–—|]\s/, 2).map((part) => part.trim());
+
+  if (parts.length < 2) {
+    return {
+      raw,
+      title: raw,
+      artist: null,
+    };
+  }
+
+  const [left, right] = parts;
+
+  if (split === "title-artist") {
+    return {
+      raw,
+      title: left || null,
+      artist: right || null,
+    };
+  }
+
+  return {
+    raw,
+    title: right || null,
+    artist: left || null,
+  };
+}
+
+class TrackMetadataService {
   private started = false;
+  private readonly listeners = new Map<string, Set<TrackListener>>();
+  private readonly cache = new Map<string, TrackMetadata>();
+  private readonly reconnectTimers = new Map<string, NodeJS.Timeout>();
 
   start() {
     if (this.started) {
       return;
     }
-
     this.started = true;
 
     for (const station of stations) {
-      this.streamStatus.set(station.id, {
-        id: station.id,
-        url: station.url,
-        failures: 0,
-        lastTime: 0,
-        status: 0,
-      });
-      this.listenToMetadata(station.id, station.url);
+      if (metadataStrategy(station) !== "icy") {
+        this.cache.set(station.id, baseFallback(station));
+        continue;
+      }
+      this.connectIcyStation(station);
     }
-
-    setInterval(() => this.rebroadcastMetadata(), 30_000);
-    setInterval(() => this.monitorStreams(), 10_000);
   }
 
-  subscribe(id: string, listener: MetadataListener) {
-    const group = this.listeners.get(id) ?? new Set<MetadataListener>();
+  snapshot(id: string): TrackMetadata | null {
+    const station = getStationById(id);
+    if (!station) {
+      return null;
+    }
+
+    const cached = this.cache.get(id);
+    const strategy = metadataStrategy(station);
+
+    if (cached && cached.source === strategy) {
+      return cached;
+    }
+
+    const fallback = baseFallback(station);
+    this.cache.set(id, fallback);
+    return fallback;
+  }
+
+  subscribe(id: string, listener: TrackListener) {
+    const station = getStationById(id);
+    if (!station) {
+      return () => {};
+    }
+
+    const group = this.listeners.get(id) ?? new Set<TrackListener>();
     group.add(listener);
     this.listeners.set(id, group);
 
-    const cached = this.metadataCache.get(id);
+    const cached = this.snapshot(id);
     if (cached) {
       listener(cached);
     }
@@ -68,132 +141,81 @@ class RadioService {
     };
   }
 
-  getStats() {
-    return {
-      streamStatus: Object.fromEntries(this.streamStatus.entries()),
-    };
-  }
-
-  private emitMetadata(metadata: Metadata) {
-    this.metadataCache.set(metadata.id, metadata);
-    const group = this.listeners.get(metadata.id);
+  private emit(payload: TrackMetadata) {
+    this.cache.set(payload.id, payload);
+    const group = this.listeners.get(payload.id);
     if (!group) {
       return;
     }
 
     for (const listener of group) {
-      listener(metadata);
+      listener(payload);
     }
   }
 
-  private parseMetadata(id: string, streamTitle?: string) {
-    if (!streamTitle) {
-      return;
-    }
-
-    let artist = "";
-    let title = "";
-
-    if (/(kcrw|wumb)/.test(id)) {
-      const [rawTitle = "", rawArtist = ""] = streamTitle.split("-");
-      title = rawTitle.trim();
-      artist = rawArtist.trim();
-    } else {
-      const [rawArtist = "", rawTitle = ""] = streamTitle.split("-");
-      title = rawTitle.trim();
-      artist = rawArtist.trim();
-    }
-
-    this.emitMetadata({ id, title, artist });
-  }
-
-  private listenToMetadata(id: string, url: string) {
-    icy.get(url, (res) => {
-      const status = this.streamStatus.get(id);
-      if (status) {
-        status.status = 1;
-        status.failures = 0;
-      }
-
-      res.on("metadata", (data: Buffer) => {
-        const { StreamTitle } = icy.parse(data);
-        this.parseMetadata(id, StreamTitle);
-      });
-
-      res.on("data", (data: Buffer) => {
-        if (data.length > 0) {
-          const current = this.streamStatus.get(id);
-          if (current) {
-            current.lastTime = Date.now();
-            current.status = 1;
-          }
-        }
-      });
-
-      res.on("error", () => {
-        this.markOffline(id);
-      });
-
-      res.on("end", () => {
-        this.markOffline(id);
-      });
-
-      res.on("close", () => {
-        this.markOffline(id);
-      });
-    });
-  }
-
-  private markOffline(id: string) {
-    const current = this.streamStatus.get(id);
-    if (!current) {
-      return;
-    }
-
-    current.status = 0;
-    this.scheduleReconnect(id, current.url);
-  }
-
-  private scheduleReconnect(id: string, url: string) {
-    if (this.reconnectTimers.has(id)) {
+  private scheduleReconnect(station: Station) {
+    if (this.reconnectTimers.has(station.id)) {
       return;
     }
 
     const timer = setTimeout(() => {
-      this.reconnectTimers.delete(id);
-      const current = this.streamStatus.get(id);
-      if (current) {
-        current.failures += 1;
-      }
-      this.listenToMetadata(id, url);
-    }, 3000);
+      this.reconnectTimers.delete(station.id);
+      this.connectIcyStation(station);
+    }, 5000);
 
-    this.reconnectTimers.set(id, timer);
+    this.reconnectTimers.set(station.id, timer);
   }
 
-  private monitorStreams() {
-    const now = Date.now();
+  private connectIcyStation(station: Station) {
+    try {
+      icy.get(station.url, (res) => {
+        res.on("metadata", (data: Buffer) => {
+          const { StreamTitle } = icy.parse(data);
+          if (!StreamTitle) {
+            return;
+          }
 
-    for (const [id, stream] of this.streamStatus.entries()) {
-      const stale = stream.lastTime > 0 && stream.lastTime < now - 3000;
-      if ((stream.status === 0 || stale) && stream.failures < 10) {
-        this.scheduleReconnect(id, stream.url);
-      }
-    }
-  }
+          const parsed = parseStreamTitle(station, StreamTitle);
+          if (!parsed) {
+            return;
+          }
 
-  private rebroadcastMetadata() {
-    for (const metadata of this.metadataCache.values()) {
-      this.emitMetadata(metadata);
+          this.emit({
+            id: station.id,
+            available: true,
+            title: parsed.title,
+            artist: parsed.artist,
+            raw: parsed.raw,
+            source: "icy",
+            updatedAt: new Date().toISOString(),
+          });
+        });
+
+        const onDisconnected = () => {
+          this.scheduleReconnect(station);
+        };
+
+        res.on("error", onDisconnected);
+        res.on("end", onDisconnected);
+        res.on("close", onDisconnected);
+      });
+    } catch {
+      this.scheduleReconnect(station);
     }
   }
 }
 
-const globalForRadio = globalThis as typeof globalThis & {
-  radioService?: RadioService;
+const globalForTrackMetadata = globalThis as typeof globalThis & {
+  trackMetadataService?: TrackMetadataService;
 };
 
-export const radioService = globalForRadio.radioService ?? new RadioService();
-if (!globalForRadio.radioService) {
-  globalForRadio.radioService = radioService;
+const shouldReuseGlobalService = process.env.NODE_ENV === "production";
+
+export const trackMetadataService =
+  shouldReuseGlobalService && globalForTrackMetadata.trackMetadataService
+    ? globalForTrackMetadata.trackMetadataService
+    : new TrackMetadataService();
+
+if (shouldReuseGlobalService && !globalForTrackMetadata.trackMetadataService) {
+  globalForTrackMetadata.trackMetadataService = trackMetadataService;
 }
