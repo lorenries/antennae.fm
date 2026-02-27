@@ -12,13 +12,12 @@ export const stations: Station[] = [
     name: "BBC6",
   },
   {
-    url: "https://nyc-prod-catalyst-0.lp-playback.studio/hls/video+8d33n2at0gq7aud6/1_0/index.m3u8",
+    url: "https://dublab.out.airtime.pro/dublab_a",
     id: "dublab",
     name: "Dublab",
-    useProxy: false,
   },
   {
-    url: "https://kcrw.streamguys1.com/kcrw_192k_mp3_e24",
+    url: "https://streams.kcrw.com/kcrw_mp3",
     id: "kcrw",
     name: "KCRW",
   },
@@ -33,9 +32,10 @@ export const stations: Station[] = [
     name: "Balamii",
   },
   {
-    url: "http://n10as.out.airtime.pro:8000/n10as_a",
+    url: "https://n10as.radiocult.fm/stream",
     id: "n10as",
     name: "n10.as",
+    useProxy: false,
   },
   { url: "https://wxpnhi.xpn.org/xpnhi-nopreroll", id: "wxpn", name: "WXPN" },
   {
