@@ -15,13 +15,20 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const upstream = await fetch(station.url, {
-    headers: {
-      "Icy-MetaData": "1",
-      "User-Agent": "antennae.fm/2.0",
-    },
-    cache: "no-store",
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(station.url, {
+      headers: {
+        "User-Agent": "antennae.fm/2.0",
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Upstream fetch failed" },
+      { status: 502 },
+    );
+  }
 
   if (!upstream.ok || !upstream.body) {
     return NextResponse.json(
@@ -30,15 +37,12 @@ export async function GET(
     );
   }
 
-  const headers = new Headers(upstream.headers);
-  headers.set(
-    "Content-Type",
-    upstream.headers.get("content-type") ?? "audio/mpeg",
-  );
-  headers.set("Cache-Control", "no-store, no-transform");
-
   return new Response(upstream.body, {
     status: upstream.status,
-    headers,
+    headers: {
+      "Content-Type": upstream.headers.get("content-type") ?? "audio/mpeg",
+      "Cache-Control": "no-store, no-transform",
+      "Access-Control-Allow-Origin": "*",
+    },
   });
 }
