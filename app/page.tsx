@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Pause, Play } from "lucide-react";
+import { ExternalLink, Loader2, Pause, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAudio } from "@/hooks/useAudio";
 
@@ -10,16 +10,58 @@ type Stream = {
   url: string;
 };
 
+type TrackMetadata = {
+  id: string;
+  available: boolean;
+  title: string | null;
+  artist: string | null;
+  raw: string | null;
+  source: "icy" | "none";
+  updatedAt: string;
+};
+
+function useTrackMetadata(id?: string) {
+  const [metadata, setMetadata] = useState<TrackMetadata | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      setMetadata(null);
+      return;
+    }
+
+    const source = new EventSource(`/api/metadata/${id}`);
+
+    source.onmessage = (event) => {
+      try {
+        setMetadata(JSON.parse(event.data) as TrackMetadata);
+      } catch {
+        // Keep previous metadata on malformed events.
+      }
+    };
+
+    return () => {
+      source.close();
+    };
+  }, [id]);
+
+  return metadata;
+}
+
 function StreamCard({
   stream,
   activeStream,
+  activeMetadata,
   onSelect,
 }: {
   stream: Stream;
   activeStream?: Stream;
+  activeMetadata: TrackMetadata | null;
   onSelect: (next: Stream) => void;
 }) {
   const isActive = activeStream?.id === stream.id;
+  const summary = [activeMetadata?.title, activeMetadata?.artist]
+    .filter(Boolean)
+    .join(" - ");
 
   return (
     <button
@@ -32,13 +74,25 @@ function StreamCard({
       } bg-[var(--surface)] hover:bg-[#202a38]`}
     >
       <span className="text-base font-bold">{stream.name}</span>
-      <span className="text-xs text-[var(--muted)]">{stream.id}</span>
+      <span className="line-clamp-2 text-xs text-[var(--muted)]">
+        {isActive && summary ? summary : stream.id}
+      </span>
     </button>
   );
 }
 
-function Player({ stream }: { stream: Stream }) {
+function Player({
+  stream,
+  metadata,
+}: {
+  stream: Stream;
+  metadata: TrackMetadata | null;
+}) {
   const { ref, play, pause, isPlaying, isLoading } = useAudio(stream.url);
+  const trackLabel =
+    [metadata?.title, metadata?.artist].filter(Boolean).join(" - ") ||
+    stream.name;
+  const canOpenSpotify = Boolean(metadata?.title && metadata?.artist);
 
   return (
     <div className="fixed bottom-0 left-0 w-full border-t border-[var(--line)] bg-[var(--surface)]">
@@ -58,9 +112,20 @@ function Player({ stream }: { stream: Stream }) {
           )}
         </button>
         <p className="line-clamp-1 flex-1 text-sm text-[var(--text)] md:text-base">
-          {stream.name}
+          {trackLabel}
         </p>
-        <span className="text-xs text-[var(--muted)]">{stream.id}</span>
+        {canOpenSpotify ? (
+          <a
+            className="inline-flex items-center gap-1 rounded border border-[#1ed760] px-3 py-1 text-xs text-[#1ed760]"
+            href={`spotify:search:${encodeURIComponent(`${metadata?.title ?? ""} ${metadata?.artist ?? ""}`)}`}
+            aria-label="Open in Spotify"
+          >
+            Spotify
+            <ExternalLink className="size-3.5" />
+          </a>
+        ) : (
+          <span className="text-xs text-[var(--muted)]">{stream.id}</span>
+        )}
       </div>
       {/* biome-ignore lint/a11y/useMediaCaption: this is hidden background radio playback with no visual media context. */}
       <video
@@ -75,6 +140,7 @@ function Player({ stream }: { stream: Stream }) {
 export default function HomePage() {
   const [streams, setStreams] = useState<Stream[]>([]);
   const [activeStream, setActiveStream] = useState<Stream | undefined>();
+  const activeMetadata = useTrackMetadata(activeStream?.id);
 
   useEffect(() => {
     let ignore = false;
@@ -108,13 +174,16 @@ export default function HomePage() {
               key={stream.id}
               stream={stream}
               activeStream={activeStream}
+              activeMetadata={activeMetadata}
               onSelect={setActiveStream}
             />
           ))}
         </div>
       </main>
 
-      {activeStream && <Player stream={activeStream} />}
+      {activeStream && (
+        <Player stream={activeStream} metadata={activeMetadata} />
+      )}
     </div>
   );
 }
