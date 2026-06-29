@@ -58,6 +58,11 @@ export const stations: Station[] = [
     name: "Radio Nova Danse",
   },
   {
+    url: "https://icecast.radiofrance.fr/fip-hifi.aac",
+    id: "fip",
+    name: "FIP",
+  },
+  {
     url: "https://nyc-prod-catalyst-0.lp-playback.studio/hls/video+85c28sa2o8wppm58/1_0/index.m3u8",
     id: "thelot",
     name: "The Lot",
