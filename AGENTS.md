@@ -23,7 +23,6 @@
 ```
 app/                    — Next.js app router pages + API routes
 app/api/stations/       — station listing endpoint
-app/api/stream/[id]/    — stream proxy endpoint
 app/api/metadata/[id]/  — SSE metadata endpoint
 src/lib/stations.ts     — station source of truth
 src/lib/radio.ts        — metadata service/parsing
@@ -61,7 +60,8 @@ pnpm build
 - Handle error paths explicitly.
 - For stream changes:
   - Keep `src/lib/stations.ts` as source of truth.
-  - Preserve `/api/stream/[id]` contract for proxied streams.
+  - Stations play directly in the browser; prefer HTTPS upstream URLs so they
+    work on the deployed site without a proxy.
 - For metadata changes:
   - Ensure unsupported streams gracefully fall back in UI.
   - Keep SSE payloads backward-compatible unless requested otherwise.

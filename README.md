@@ -13,8 +13,7 @@
 ## Architecture
 
 - `app/page.tsx`: radio UI
-- `app/api/stations`: station list endpoint
-- `app/api/stream/[id]`: audio stream proxy endpoint
+- `app/api/stations`: station list endpoint (returns direct upstream stream URLs)
 - `app/api/metadata/[id]`: SSE metadata endpoint
 - `src/lib/radio.ts`: metadata monitor + pub/sub for station updates
 - `src/lib/stations.ts`: station definitions

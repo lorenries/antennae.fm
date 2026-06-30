@@ -2,7 +2,6 @@ export type Station = {
   id: string;
   name: string;
   url: string;
-  useProxy?: boolean;
   metadataStrategy?: "icy" | "none";
   metadataSplit?: "artist-title" | "title-artist";
 };
@@ -25,7 +24,7 @@ export const stations: Station[] = [
     metadataSplit: "title-artist",
   },
   {
-    url: "http://s-00.wefunkradio.com:81/wefunk64.mp3",
+    url: "https://s-00.wefunkradio.com:8443/wefunk64.mp3",
     id: "wefunk",
     name: "WEFUNK",
   },
@@ -33,22 +32,21 @@ export const stations: Station[] = [
     url: "https://n10as.radiocult.fm/stream",
     id: "n10as",
     name: "n10.as",
-    useProxy: false,
   },
   { url: "https://wxpnhi.xpn.org/xpnhi-nopreroll", id: "wxpn", name: "WXPN" },
   {
-    url: "http://icecast.vrtcdn.be/stubru-high.mp3",
+    url: "https://icecast.vrtcdn.be/stubru-high.mp3",
     id: "stubru",
     name: "StuBru",
   },
   {
-    url: "http://wumb.streamguys1.com/wumb919fast",
+    url: "https://wumb.streamguys1.com/wumb919fast",
     id: "wumb",
     name: "WUMB",
     metadataSplit: "title-artist",
   },
   {
-    url: "http://stream.kalx.berkeley.edu:8000/kalx-128.mp3",
+    url: "https://stream.kalx.berkeley.edu:8443/kalx-128.mp3",
     id: "kalx",
     name: "KALX",
   },
@@ -66,7 +64,6 @@ export const stations: Station[] = [
     url: "https://nyc-prod-catalyst-0.lp-playback.studio/hls/video+85c28sa2o8wppm58/1_0/index.m3u8",
     id: "thelot",
     name: "The Lot",
-    useProxy: false,
     metadataStrategy: "none",
   },
   {
